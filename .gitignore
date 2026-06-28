@@ -1,0 +1,240 @@
+# ========================================
+# IDE Specific Files
+# ========================================
+
+### IntelliJ IDEA ###
+.idea/
+*.iml
+*.ipr
+*.iws
+*.swp
+*~
+.idea_modules/
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/dictionaries
+.idea/**/shelf
+.idea/**/contentModel.xml
+.idea/**/dataSources/
+.idea/**/dataSources.ids
+.idea/**/dataSources.local.xml
+.idea/**/sqlDataSources.xml
+.idea/**/dynamic.xml
+.idea/**/uiDesigner.xml
+.idea/**/dbnavigator.xml
+.idea/**/gradle.xml
+.idea/**/libraries
+.idea/**/maven.xml
+.idea/**/modules.xml
+.idea/**/scopes/
+.idea/**/vcs.xml
+.idea/**/compiler.xml
+.idea/**/encodings.xml
+.idea/**/jarRepositories.xml
+.idea/**/kotlinc.xml
+.idea/**/sonarlint/
+.idea/**/checkstyle-idea.xml
+
+### Eclipse ###
+.project
+.classpath
+.settings/
+bin/
+build/
+*.launch
+
+### VS Code ###
+.vscode/
+*.code-workspace
+
+### NetBeans ###
+nbproject/
+nbactions.xml
+nb-configuration.xml
+
+### Vim ###
+*.swp
+*.swo
+*~
+
+# ========================================
+# Build Artifacts
+# ========================================
+
+### Maven ###
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+.mvn/wrapper/maven-wrapper.properties
+
+### Gradle ###
+.gradle/
+gradle-app.setting
+!gradle-wrapper.jar
+build/
+out/
+.gradletasknamecache
+
+### General ###
+**/build/
+**/out/
+**/bin/
+**/target/
+**/dist/
+
+# ========================================
+# Logs and Temporary Files
+# ========================================
+
+*.log
+logs/
+*.tmp
+*.temp
+*.cache
+*.dump
+hs_err_pid*.log
+*.hprof
+*.jfr
+
+# ========================================
+# Application Configuration (Sensitive)
+# ========================================
+
+### Spring Boot ###
+application-local.properties
+application-dev.properties
+application-prod.properties
+application-*.local.properties
+*.local.properties
+.env
+.env.local
+.env.*.local
+
+### Secrets ###
+*.p12
+*.jks
+*.key
+*.crt
+*.pem
+*.p8
+*.der
+*.cer
+*.csr
+*.keystore
+*.truststore
+secrets/
+credentials/
+
+# ========================================
+# System Files
+# ========================================
+
+### macOS ###
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+
+*.cab
+*.msi
+*.msm
+*.exe
+*.dll
+*.so
+*.dylib
+
+
+# ========================================
+# Testing
+# ========================================
+
+### Test Reports ###
+test-output/
+*.test
+test-reports/
+surefire-reports/
+failsafe-reports/
+target/surefire-reports/
+target/failsafe-reports/
+
+### Coverage Reports ###
+*.coverage
+*.cover
+coverage/
+.jacoco/
+htmlReport/
+test-coverage/
+target/site/
+
+# ========================================
+# Database
+# ========================================
+
+*.db
+*.sqlite
+*.sqlite3
+*.h2.db
+*.h2.trace
+*.mv.db
+*.lck
+*.trace
+
+# ========================================
+# Docker
+# ========================================
+
+.docker/
+docker-compose.override.yml
+docker-compose.local.yml
+*.dockerignore
+
+# ========================================
+# CI/CD
+# ========================================
+
+### Jenkins ###
+.jenkins/
+jenkins/
+*.jenkinsfile.backup
+
+### GitHub Actions ###
+.github/**/*.local
+
+### GitLab CI ###
+.gitlab-ci.local.yml
+
+# ========================================
+# Various
+# ========================================
+
+*.zip
+*.tar.gz
+*.rar
+*.7z
+*.jar
+*.war
+*.ear
+*.class
+*.lock
+*.pid
+*.seed
+*.pid.lock
+*.bak
+*.backup
+*.orig
+*.old
+*.new
