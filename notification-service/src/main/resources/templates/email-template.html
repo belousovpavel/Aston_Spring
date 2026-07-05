@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Email Notification</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header { text-align: center; border-bottom: 2px solid #4CAF50; padding-bottom: 20px; margin-bottom: 20px; }
+        .content { padding: 20px 0; line-height: 1.6; }
+        .footer { border-top: 1px solid #eee; padding-top: 20px; text-align: center; color: #888; font-size: 12px; }
+        .greeting { font-size: 18px; font-weight: bold; }
+        .message { background-color: #f9f9f9; padding: 15px; border-radius: 4px; margin: 20px 0; }
+        .status-created { color: #4CAF50; font-weight: bold; }
+        .status-deleted { color: #f44336; font-weight: bold; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1 th:text="${appName}">User Service</h1>
+    </div>
+
+    <div class="content">
+        <p class="greeting">Здравствуйте, <span th:text="${name}">User</span>!</p>
+
+        <div th:if="${type == 'created'}" class="message">
+            <p class="status-created">✅ Ваш аккаунт был успешно создан!</p>
+            <p>Email: <span th:text="${email}">user@example.com</span></p>
+            <p>Вы успешно зарегистрировались в нашем сервисе.</p>
+        </div>
+
+        <div th:if="${type == 'deleted'}" class="message">
+            <p class="status-deleted">⚠️ Ваш аккаунт был удален.</p>
+            <p>Email: <span th:text="${email}">user@example.com</span></p>
+            <p>Если это были не вы, пожалуйста, свяжитесь с поддержкой.</p>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>&copy; 2024 <span th:text="${appName}">User Service</span>. Все права защищены.</p>
+        <p>Это автоматическое сообщение, пожалуйста, не отвечайте на него.</p>
+    </div>
+</div>
+</body>
+</html>

@@ -1,12 +1,13 @@
 package com.userapp.spring_aston.service;
 
-import com.userapp.spring_aston.dto.UserRequestDTO;
-import com.userapp.spring_aston.dto.UserResponseDTO;
-import com.userapp.spring_aston.entity.User;
-import com.userapp.spring_aston.exception.DuplicateEmailException;
-import com.userapp.spring_aston.exception.ResourceNotFoundException;
-import com.userapp.spring_aston.mapper.UserMapper;
-import com.userapp.spring_aston.repository.UserRepository;
+import com.userapp.dto.UserRequestDTO;
+import com.userapp.dto.UserResponseDTO;
+import com.userapp.entity.User;
+import com.userapp.exception.DuplicateEmailException;
+import com.userapp.exception.ResourceNotFoundException;
+import com.userapp.kafka.UserEventProducer;  // НОВЫЙ ИМПОРТ
+import com.userapp.mapper.UserMapper;
+import com.userapp.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+    private final UserEventProducer eventProducer;  // НОВОЕ
 
     @Override
     public UserResponseDTO createUser(UserRequestDTO request) {
@@ -35,10 +37,37 @@ public class UserServiceImpl implements UserService {
         User user = userMapper.toEntity(request);
         User savedUser = userRepository.save(user);
 
+        // 🔥 НОВОЕ: Отправляем событие в Kafka
+        eventProducer.sendUserCreatedEvent(
+                savedUser.getEmail(),
+                savedUser.getName(),
+                savedUser.getId()
+        );
+
         log.info("User created successfully with id: {}", savedUser.getId());
         return userMapper.toResponseDTO(savedUser);
     }
 
+    @Override
+    public void deleteUser(Long id) {
+        log.info("Deleting user with id: {}", id);
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+
+        // Сохраняем данные пользователя перед удалением
+        String email = user.getEmail();
+        String name = user.getName();
+
+        userRepository.deleteById(id);
+
+        // 🔥 НОВОЕ: Отправляем событие в Kafka
+        eventProducer.sendUserDeletedEvent(email, name, id);
+
+        log.info("User deleted successfully with id: {}", id);
+    }
+
+    // Остальные методы остаются без изменений
     @Override
     @Transactional(readOnly = true)
     public UserResponseDTO getUserById(Long id) {
@@ -64,7 +93,6 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
 
-        // Check if email is being changed and if it's already taken
         if (!user.getEmail().equals(request.getEmail()) &&
                 userRepository.existsByEmail(request.getEmail())) {
             throw new DuplicateEmailException("Email already exists: " + request.getEmail());
@@ -75,18 +103,6 @@ public class UserServiceImpl implements UserService {
 
         log.info("User updated successfully with id: {}", updatedUser.getId());
         return userMapper.toResponseDTO(updatedUser);
-    }
-
-    @Override
-    public void deleteUser(Long id) {
-        log.info("Deleting user with id: {}", id);
-
-        if (!userRepository.existsById(id)) {
-            throw new ResourceNotFoundException("User not found with id: " + id);
-        }
-
-        userRepository.deleteById(id);
-        log.info("User deleted successfully with id: {}", id);
     }
 
     @Override
