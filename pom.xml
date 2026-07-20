@@ -17,6 +17,9 @@
     <description>User Service with Spring Boot</description>
     <modules>
         <module>untitled</module>
+        <module>service-discovery</module>
+        <module>api-gateway</module>
+        <module>notification-service/config-server</module>
     </modules>
 
     <properties>
