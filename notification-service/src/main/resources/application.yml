@@ -3,10 +3,10 @@ spring:
     name: notification-service
 
   config:
-    import: optional:configserver:http://localhost:8888
+    import: optional:configserver:http://config-server:8888
 
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     consumer:
       group-id: notification-group
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
@@ -15,10 +15,10 @@ spring:
       enable-auto-commit: false
 
   mail:
-    host: ${MAIL_HOST:smtp.gmail.com}
-    port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME:}
-    password: ${MAIL_PASSWORD:}
+    host: ${SPRING_MAIL_HOST:smtp.gmail.com}
+    port: ${SPRING_MAIL_PORT:587}
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
@@ -32,7 +32,7 @@ server:
 eureka:
   client:
     service-url:
-      defaultZone: ${EUREKA_SERVER:http://localhost:8761/eureka/}
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}
     fetch-registry: true
     register-with-eureka: true
   instance:
@@ -51,5 +51,5 @@ management:
 
 logging:
   level:
-    com.notification: DEBUG
+    com.notification: ${LOG_LEVEL:DEBUG}
     org.springframework.kafka: INFO

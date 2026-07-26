@@ -1,6 +1,87 @@
 version: '3.8'
 
 services:
+  # ========================================
+  # Service Discovery (Eureka Server)
+  # ========================================
+  service-discovery:
+    build:
+      context: ./service-discovery
+      dockerfile: Dockerfile
+    container_name: service-discovery
+    ports:
+      - "8761:8761"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_INSTANCE_HOSTNAME=service-discovery
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  # ========================================
+  # Config Server (External Configuration)
+  # ========================================
+  config-server:
+    build:
+      context: ./config-server
+      dockerfile: Dockerfile
+    container_name: config-server
+    ports:
+      - "8888:8888"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+    networks:
+      - microservices-network
+    depends_on:
+      service-discovery:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  # ========================================
+  # API Gateway
+  # ========================================
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+    networks:
+      - microservices-network
+    depends_on:
+      service-discovery:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  # ========================================
+  # PostgreSQL
+  # ========================================
   postgres:
     image: postgres:15-alpine
     container_name: postgres-userdb
@@ -8,11 +89,24 @@ services:
       POSTGRES_DB: userdb
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+      PGDATA: /var/lib/postgresql/data/pgdata
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
 
+  # ========================================
+  # Zookeeper (for Kafka)
+  # ========================================
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
     container_name: zookeeper
@@ -21,22 +115,158 @@ services:
       ZOOKEEPER_TICK_TIME: 2000
     ports:
       - "2181:2181"
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "echo", "ruok", "|", "nc", "localhost", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
 
+  # ========================================
+  # Kafka
+  # ========================================
   kafka:
     image: confluentinc/cp-kafka:latest
     container_name: kafka
     depends_on:
-      - zookeeper
+      zookeeper:
+        condition: service_healthy
     ports:
       - "9092:9092"
+      - "9093:9093"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_JMX_PORT: 9099
+      KAFKA_JMX_HOSTNAME: localhost
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "kafka-topics", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
 
+  # ========================================
+  # Kafka UI (for monitoring)
+  # ========================================
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8083:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+      KAFKA_CLUSTERS_0_JMXPORT: 9099
+      KAFKA_CLUSTERS_0_JMXHOST: kafka
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # ========================================
+  # User Service
+  # ========================================
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    container_name: user-service
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/userdb
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    networks:
+      - microservices-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      service-discovery:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    restart: unless-stopped
+
+  # ========================================
+  # Notification Service
+  # ========================================
+  notification-service:
+    build:
+      context: ./notification-service
+      dockerfile: Dockerfile
+    container_name: notification-service
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - SPRING_MAIL_HOST=smtp.gmail.com
+      - SPRING_MAIL_PORT=587
+      - SPRING_MAIL_USERNAME=${MAIL_USERNAME}
+      - SPRING_MAIL_PASSWORD=${MAIL_PASSWORD}
+    networks:
+      - microservices-network
+    depends_on:
+      kafka:
+        condition: service_healthy
+      service-discovery:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    restart: unless-stopped
+
+# ========================================
+# Networks
+# ========================================
+networks:
+  microservices-network:
+    driver: bridge
+    name: microservices-network
+
+# ========================================
+# Volumes
+# ========================================
 volumes:
   postgres_data:
+    driver: local

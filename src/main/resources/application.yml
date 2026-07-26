@@ -3,12 +3,12 @@ spring:
     name: user-service
 
   config:
-    import: optional:configserver:http://localhost:8888
+    import: optional:configserver:http://config-server:8888
 
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/userdb}
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:postgres}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/userdb}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -28,7 +28,7 @@ spring:
     baseline-on-migrate: true
 
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
@@ -39,7 +39,7 @@ server:
 eureka:
   client:
     service-url:
-      defaultZone: ${EUREKA_SERVER:http://localhost:8761/eureka/}
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}
     fetch-registry: true
     register-with-eureka: true
   instance:
@@ -52,8 +52,6 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
     enabled: true
-    display-request-duration: true
-    try-it-out-enabled: true
 
 spring:
   hateoas:
@@ -63,7 +61,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,circuitbreakers
+        include: health,info,metrics
   metrics:
     export:
       prometheus:
@@ -71,12 +69,10 @@ management:
 
 logging:
   level:
-    com.userapp: DEBUG
+    com.userapp: ${LOG_LEVEL:DEBUG}
     org.springframework.cloud: INFO
     org.springframework.kafka: INFO
 
 app:
   name: User Service
   version: 1.0.0
-  contact:
-    email: support@userapp.com
